@@ -5,7 +5,7 @@ Deploy archived content to web servers
 
 """
 
-from fabric.api import env, sudo, task, put, hosts
+from fabric.api import env, run, task, put, hosts, sudo
 import os
 
 
@@ -36,7 +36,7 @@ def do_deploy(archive_path):
         put(f'{archive_path}', '/tmp/')
 
         # extract the archive filename
-        output = sudo("ls /tmp/").stdout.strip()
+        output = run("ls /tmp/").stdout.strip()
         for text in output.split():
             if text.startswith('web'):
                 archive = text
@@ -46,28 +46,29 @@ def do_deploy(archive_path):
         # remove archive extension(eg .tgz)
         new_arc = archive[:-4]
 
+        data = f"/data/web_static/releases/{new_arc}/"
+
         # create a directory for the archive
-        sudo(f"mkdir -p /data/web_static/releases/{new_arc}")
+        run(f"sudo mkdir -p /data/web_static/releases/{new_arc}")
 
         # uncompress archive
-        sudo(f'tar -xf /tmp/{archive} -C /data/web_static/releases/{new_arc}/')
+        run(f'sudo tar -xf /tmp/{archive} -C {data}')
 
         # Delete the archive
-        sudo(f'rm -rf /tmp/{archive}')
+        run(f'sudo rm -rf /tmp/{archive}')
 
-        data = f"/data/web_static/releases/{new_arc}/"
         # move the web_static content into the newly created folder
-        sudo(f"cp -rf /data/web_static/releases/{new_arc}/web_static/* {data}")
+        run(f"sudo cp -rf {data}web_static/* {data}")
 
         # remove web_static folder
-        sudo(f"rm -rf /data/web_static/releases/{new_arc}/web_static")
+        run(f"sudo rm -rf /data/web_static/releases/{new_arc}/web_static")
 
         # Delete symlink
-        sudo('rm -rf /data/web_static/current')
+        run('sudo rm -rf /data/web_static/current')
 
         current = "/data/web_static/current"
         # Create a new symlink to the location of uncompressed archive
-        sudo(f'ln -sf  /data/web_static/releases/{new_arc} {current}')
+        run(f'sudo ln -sf  /data/web_static/releases/{new_arc} {current}')
 
         return True
 
